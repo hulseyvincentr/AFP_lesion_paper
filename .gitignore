@@ -1,0 +1,37 @@
+# Python
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+
+# macOS
+.DS_Store
+
+# Large/raw data
+*.npz
+*.npy
+*.wav
+*.mp3
+*.h5
+*.hdf5
+*.mat
+
+# Large images / generated outputs
+*.tif
+*.tiff
+
+# Optional: uncomment if you do not want figures tracked
+# *.png
+# *.jpg
+# *.jpeg
+# *.svg
+# *.pdf
+
+# Local outputs
+outputs/
+data/
+raw_data/
+processed_data/
+figures/generated/
+
+# Excel temp files
+~$*.xlsx
