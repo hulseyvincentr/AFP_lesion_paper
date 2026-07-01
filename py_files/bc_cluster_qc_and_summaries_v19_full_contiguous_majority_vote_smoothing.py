@@ -44,7 +44,7 @@ import matplotlib.pyplot as plt
 from scipy.stats import wilcoxon
 
 SCRIPT_VERSION = "bc_cluster_qc_and_summaries_v12_full_run_bc_variants"
-DEFAULT_V8_SCRIPT = "export_equal_umap_cluster_spectrograms_v17_full_contiguous_main_decoder_noise_fill.py"
+DEFAULT_V8_SCRIPT = "export_equal_umap_cluster_spectrograms_v23_full_contiguous_majority_vote_smoothing_umap_title_spacing.py"
 
 
 def _load_module_from_path(path: Path, module_name: str):
