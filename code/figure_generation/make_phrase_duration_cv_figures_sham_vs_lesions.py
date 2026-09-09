@@ -28,13 +28,13 @@ figures/paper_delta_by_group_delta_cv.pdf/png
 Recommended example
 -------------------
 python make_phrase_duration_cv_figures_sham_vs_lesions.py \
-  --long-csv "/Volumes/my_own_SSD/updated_AreaX_outputs/phrase_duration_batch_outputs/_batch_summary/all_birds_phrase_duration_long_latepre_post_epochs.csv" \
-  --selected-csv "/Volumes/my_own_SSD/updated_AreaX_outputs/prolongation_pooled_prepost_top30/selected_syllables_used_for_prolongation.csv" \
-  --metadata-excel "/Volumes/my_own_SSD/updated_AreaX_outputs/Area_X_lesion_metadata_with_hit_types.xlsx" \
+  --long-csv "/path/to/updated_AreaX_outputs/phrase_duration_batch_outputs/_batch_summary/all_birds_phrase_duration_long_latepre_post_epochs.csv" \
+  --selected-csv "/path/to/updated_AreaX_outputs/prolongation_pooled_prepost_top30/selected_syllables_used_for_prolongation.csv" \
+  --metadata-excel "/path/to/updated_AreaX_outputs/Area_X_lesion_metadata_with_hit_types.xlsx" \
   --metadata-sheet "animal_hit_type_summary" \
   --metadata-bird-col "Animal ID" \
   --metadata-plot-col "Lesion hit type" \
-  --out-dir "/Volumes/my_own_SSD/updated_AreaX_outputs/prolongation_pooled_prepost_top30/cv_figures" \
+  --out-dir "/path/to/updated_AreaX_outputs/prolongation_pooled_prepost_top30/cv_figures" \
   --n-balance 200 \
   --n-perm 10000 \
   --correction holm

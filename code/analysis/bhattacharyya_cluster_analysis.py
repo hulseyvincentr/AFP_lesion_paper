@@ -13,11 +13,11 @@ that adds:
 
 Typical usage:
   python bc_cluster_qc_and_summaries_v9.py \
-    --npz-path /Volumes/my_own_SSD/updated_AreaX_outputs/USA5443/USA5443.npz \
-    --metadata-excel-path /Volumes/my_own_SSD/updated_AreaX_outputs/Area_X_lesion_metadata_with_hit_types.xlsx \
+    --npz-path /path/to/updated_AreaX_outputs/USA5443/USA5443.npz \
+    --metadata-excel-path /path/to/updated_AreaX_outputs/Area_X_lesion_metadata_with_hit_types.xlsx \
     --spectrogram-script /Users/.../pre_post_syllable_sample_spectrograms_long_rows_with_bouts_v7.py \
-    --phrase-csv /Volumes/my_own_SSD/updated_AreaX_outputs/usage_balanced_phrase_duration_stats.csv \
-    --out-dir /Volumes/my_own_SSD/updated_AreaX_outputs/bc_cluster_qc_outputs \
+    --phrase-csv /path/to/updated_AreaX_outputs/usage_balanced_phrase_duration_stats.csv \
+    --out-dir /path/to/updated_AreaX_outputs/bc_cluster_qc_outputs \
     --animal-id USA5443 \
     --period-mode early_late_pre_post \
     --bc-analysis-mode run_balanced_phrase_normalized \
@@ -44,7 +44,7 @@ import matplotlib.pyplot as plt
 from scipy.stats import wilcoxon
 
 SCRIPT_VERSION = "bc_cluster_qc_and_summaries_v12_full_run_bc_variants"
-DEFAULT_V8_SCRIPT = "export_equal_umap_cluster_spectrograms_v23_full_contiguous_majority_vote_smoothing_umap_title_spacing.py"
+DEFAULT_V8_SCRIPT = "export_equal_umap_cluster_spectrograms_v17_full_contiguous_main_decoder_noise_fill.py"
 
 
 def _load_module_from_path(path: Path, module_name: str):
@@ -650,6 +650,9 @@ def run_pipeline(
     smooth_short_label_interruptions: bool,
     max_label_interruption_ms: float,
     smoothing_max_iterations: int,
+    apply_majority_vote_label_smoothing: bool,
+    majority_vote_window_bins: int,
+    majority_vote_by_file: bool,
     only_cluster_ids: Optional[Sequence[int]],
     vocalization_only: bool,
     period_mode: str,
@@ -707,6 +710,9 @@ def run_pipeline(
         smooth_short_label_interruptions=smooth_short_label_interruptions,
         max_label_interruption_ms=max_label_interruption_ms,
         smoothing_max_iterations=smoothing_max_iterations,
+        apply_majority_vote_label_smoothing=apply_majority_vote_label_smoothing,
+        majority_vote_window_bins=majority_vote_window_bins,
+        majority_vote_by_file=majority_vote_by_file,
         only_cluster_ids=only_cluster_ids,
         vocalization_only=vocalization_only,
         period_mode=period_mode,
@@ -1102,6 +1108,17 @@ def parse_args() -> argparse.Namespace:
     )
     p.add_argument("--max-label-interruption-ms", type=float, default=50.0)
     p.add_argument("--smoothing-max-iterations", type=int, default=3)
+    p.add_argument(
+        "--apply-majority-vote-label-smoothing",
+        action="store_true",
+        help=(
+            "Apply TweetyBERT-style temporal majority-vote smoothing before BC/run selection: "
+            "each bin is replaced by the most frequent label in a centered sliding window, "
+            "with first-in-window tie breaking."
+        ),
+    )
+    p.add_argument("--majority-vote-window-bins", type=int, default=200, help="Window size in time bins for --apply-majority-vote-label-smoothing. 200 bins is ~540 ms at 2.7 ms/bin.")
+    p.add_argument("--majority-vote-across-file-boundaries", action="store_true", help="If set, apply majority voting across the whole concatenated label array instead of independently within file_indices segments.")
     p.add_argument("--only-cluster-ids", nargs="*", default=None)
     p.add_argument("--no-vocalization-only", action="store_true")
 
@@ -1185,6 +1202,9 @@ def main() -> None:
         smooth_short_label_interruptions=bool(args.smooth_short_label_interruptions),
         max_label_interruption_ms=float(args.max_label_interruption_ms),
         smoothing_max_iterations=int(args.smoothing_max_iterations),
+        apply_majority_vote_label_smoothing=bool(args.apply_majority_vote_label_smoothing),
+        majority_vote_window_bins=int(args.majority_vote_window_bins),
+        majority_vote_by_file=not bool(args.majority_vote_across_file_boundaries),
         only_cluster_ids=only_cluster_ids,
         vocalization_only=not bool(args.no_vocalization_only),
         period_mode=str(args.period_mode),

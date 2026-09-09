@@ -30,6 +30,11 @@ import argparse
 import json
 import re
 from pathlib import Path
+import sys
+
+_HELPERS_DIR = Path(__file__).resolve().parents[1] / "helpers"
+if str(_HELPERS_DIR) not in sys.path:
+    sys.path.insert(0, str(_HELPERS_DIR))
 from typing import Any, Dict, Optional, Union, Sequence, Tuple
 
 import numpy as np

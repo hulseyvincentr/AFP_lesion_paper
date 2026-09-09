@@ -37,7 +37,7 @@ This script imports your existing pre/post spectrogram helper script for:
   - spectrogram orientation
 
 Output layout:
-  /Volumes/my_own_SSD/updated_AreaX_outputs/equal_umap_cluster_spectrograms_exports/
+  /path/to/updated_AreaX_outputs/equal_umap_cluster_spectrograms_exports/
       USA5443/
           USA5443_label02_UMAP_equal_timebins.png
           USA5443_label02_selected_equal_timebins.csv
@@ -3214,7 +3214,7 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--spectrogram-script", required=True, help="Path to your pre/post spectrogram helper script.")
     p.add_argument(
         "--out-dir",
-        default="/Volumes/my_own_SSD/updated_AreaX_outputs/equal_umap_cluster_spectrograms_exports",
+        default="outputs/equal_umap_cluster_spectrograms_exports",
         help=(
             "Output ROOT folder. The script will create an animal-ID subfolder inside this root, "
             "and save all UMAP/spectrogram images directly inside that animal folder."
