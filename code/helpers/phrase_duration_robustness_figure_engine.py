@@ -97,11 +97,11 @@ for splitting the combined medial/lateral panel into:
 Example terminal usage
 ----------------------
 python panel_C_D_variance_plots_with_json_colors_tight_axes_sd_stats_cb_palette_boxplots.py \
-  --scatter-csv "/Volumes/my_own_SSD/updated_AreaX_outputs/usage_balanced_phrase_duration_stats.csv" \
-  --daily-csv "/Volumes/my_own_SSD/updated_AreaX_outputs/top30_phrase_variance_BC_only_v4/batch_aligned_phrase_duration_variance_top30.csv" \
-  --metadata-excel "/Volumes/my_own_SSD/updated_AreaX_outputs/Area_X_lesion_metadata_with_hit_types.xlsx" \
-  --color-json "/Volumes/my_own_SSD/updated_AreaX_outputs/areax_lesion_group_colors_v1.json" \
-  --out-dir "/Volumes/my_own_SSD/updated_AreaX_outputs/panel_C_D_variance_outputs" \
+  --scatter-csv "/path/to/updated_AreaX_outputs/usage_balanced_phrase_duration_stats.csv" \
+  --daily-csv "/path/to/updated_AreaX_outputs/top30_phrase_variance_BC_only_v4/batch_aligned_phrase_duration_variance_top30.csv" \
+  --metadata-excel "/path/to/updated_AreaX_outputs/Area_X_lesion_metadata_with_hit_types.xlsx" \
+  --color-json "/path/to/updated_AreaX_outputs/areax_lesion_group_colors_v1.json" \
+  --out-dir "/path/to/updated_AreaX_outputs/panel_C_D_variance_outputs" \
   --scatter-top-percentile 70 \
   --rank-on post \
   --y-scale symlog \

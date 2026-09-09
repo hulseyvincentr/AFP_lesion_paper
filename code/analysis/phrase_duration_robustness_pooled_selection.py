@@ -39,12 +39,11 @@ import pandas as pd
 from scipy import stats
 
 
-DEFAULT_REPO_DIR = Path("/Users/mirandahulsey-vincent/Documents/allPythonCode/AFP_lesion_paper")
-DEFAULT_ROOT = Path("/Volumes/my_own_SSD/updated_AreaX_outputs")
+DEFAULT_REPO_DIR = Path(__file__).resolve().parents[2]
+DEFAULT_ROOT = None
 DEFAULT_OUT_NAME = "phrase_duration_robustness_2026-07-01"
 DEFAULT_FIGURE3_SCRIPT = (
-    "py_files/"
-    "panel_C_D_sdscatter_boxplots_sdtimecourse_combined_FINAL_layouttuned_splitrow_NOTITLE_CLEANBOX_legendabove.py"
+    "code/helpers/phrase_duration_robustness_figure_engine.py"
 )
 
 RUNS = [
@@ -373,7 +372,7 @@ def parse_args() -> argparse.Namespace:
         description="Run phrase-duration robustness analyses with pooled pre+post syllable selection."
     )
     parser.add_argument("--repo-dir", type=Path, default=DEFAULT_REPO_DIR)
-    parser.add_argument("--root", type=Path, default=DEFAULT_ROOT)
+    parser.add_argument("--root", type=Path, required=True)
     parser.add_argument(
         "--out-dir",
         type=Path,

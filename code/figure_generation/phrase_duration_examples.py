@@ -5,6 +5,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
+import sys
+
+_HELPERS_DIR = Path(__file__).resolve().parents[1] / "helpers"
+if str(_HELPERS_DIR) not in sys.path:
+    sys.path.insert(0, str(_HELPERS_DIR))
 from typing import Dict, List, Optional, Sequence, Tuple, Union
 
 import math
@@ -2248,9 +2253,9 @@ import phrase_duration_pre_vs_post_grouped_with_label_colors as pdpg
 
 importlib.reload(pdpg)
 
-detect = Path("/Volumes/my_own_SSD/updated_AreaX_outputs/USA5288/USA5288_song_detection.json")
-decoded = Path("/Volumes/my_own_SSD/updated_AreaX_outputs/USA5288/USA5288_decoded_database.json")
-color_json = Path("/Volumes/my_own_SSD/updated_AreaX_outputs/fixed_label_colors_50.json")
+detect = Path("/path/to/updated_AreaX_outputs/USA5288/USA5288_song_detection.json")
+decoded = Path("/path/to/updated_AreaX_outputs/USA5288/USA5288_decoded_database.json")
+color_json = Path("/path/to/updated_AreaX_outputs/fixed_label_colors_50.json")
 
 outdir = decoded.parent / "figures" / "phrase_durations"
 outdir.mkdir(parents=True, exist_ok=True)

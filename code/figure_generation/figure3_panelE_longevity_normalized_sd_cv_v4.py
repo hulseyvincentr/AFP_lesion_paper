@@ -59,11 +59,11 @@ First run the existing Figure 3 script so it writes the pooled-pre/post-selected
 animal × syllable pairs. Then run:
 
 python figure3_panelE_longevity_normalized_sd_cv_v1.py \
-  --daily-variance-csv "/Volumes/my_own_SSD/updated_AreaX_outputs/phrase_duration_batch_outputs/_batch_summary/batch_aligned_phrase_duration_variance_all.csv" \
-  --selected-pairs-csv "/Volumes/my_own_SSD/updated_AreaX_outputs/Figure3_pooled_prepost_top30_ALLdaily_SDonly_seconds/panel_C_selected_animal_syllable_pairs.csv" \
-  --duration-long-csv "/Volumes/my_own_SSD/updated_AreaX_outputs/phrase_duration_batch_outputs/_batch_summary/all_birds_phrase_duration_long_latepre_post_epochs.csv" \
-  --metadata-excel "/Volumes/my_own_SSD/updated_AreaX_outputs/Area_X_lesion_metadata_with_hit_types.xlsx" \
-  --out-dir "/Volumes/my_own_SSD/updated_AreaX_outputs/Figure3_panelE_ML_longevity_SD_CV" \
+  --daily-variance-csv "/path/to/updated_AreaX_outputs/phrase_duration_batch_outputs/_batch_summary/batch_aligned_phrase_duration_variance_all.csv" \
+  --selected-pairs-csv "/path/to/updated_AreaX_outputs/Figure3_pooled_prepost_top30_ALLdaily_SDonly_seconds/panel_C_selected_animal_syllable_pairs.csv" \
+  --duration-long-csv "/path/to/updated_AreaX_outputs/phrase_duration_batch_outputs/_batch_summary/all_birds_phrase_duration_long_latepre_post_epochs.csv" \
+  --metadata-excel "/path/to/updated_AreaX_outputs/Area_X_lesion_metadata_with_hit_types.xlsx" \
+  --out-dir "/path/to/updated_AreaX_outputs/Figure3_panelE_ML_longevity_SD_CV" \
   --baseline-start-day -14 \
   --baseline-end-day -1 \
   --x-min -30 \
