@@ -1494,7 +1494,7 @@ def _build_argparser():
     p.add_argument("--pre_group", default="Late Pre", help="(scatter mode) pre-lesion group label.")
     p.add_argument("--post_group", default="Post", help="(scatter mode) post-lesion group label.")
     p.add_argument("--scatter_top_percentile", type=float, default=None,
-                   help="(scatter mode) optional percentile filter per animal (e.g., 90 keeps top 10%).")
+                   help="(scatter mode) optional percentile filter per animal (e.g., 90 keeps top 10%%).")
     p.add_argument("--rank_on", choices=["pre", "post", "max"], default="post",
                    help="(scatter mode) metric used for percentile ranking if scatter_top_percentile is set.")
     p.add_argument("--linear", action="store_true", help="(scatter mode) use linear axes instead of log-log.")

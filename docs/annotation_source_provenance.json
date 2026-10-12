@@ -1,0 +1,16 @@
+{
+  "tweetybert_snapshot": "9ffed98fa5d5da0f5007865bddb354e008b1d70a",
+  "detector_snapshot": "274ce3175c8d88ce4b3301b0bc38eb8923af232c",
+  "historical_manuscript_commit_confirmed": false,
+  "supplied_configuration_sha256": {
+    "USA5288_linear_decoder/decoder_state/decoder_config.json": "89e1fd11e737d10ea883640e1c940eb4f835b8bc825949692a791af5726201d1",
+    "USA5337_linear_decoder/decoder_state/decoder_config.json": "a1b9dcf9c87adafc72c97cbc40b9f2edcdf9ceeb7442e0e92db363b280bf20a5",
+    "TweetyBERT_Pretrain_LLB_AreaX_FallSong/config.json": "0db1a15879851c23bf93c53322b137aa48399ae91820df73912d4e7d6bf6318d"
+  },
+  "changes": [
+    "Portable inference detector path and sys.executable",
+    "Bundled detector replaces automatic clone",
+    "Pretraining example data paths made relative"
+  ],
+  "verification": "Static source checks; no annotation training/inference or checkpoint verification."
+}

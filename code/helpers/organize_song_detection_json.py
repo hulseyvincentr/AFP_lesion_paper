@@ -347,7 +347,10 @@ def print_flagged_summary(
 # Optional: quick local run for testing (creates 'detected_song_segments')
 # ──────────────────────────────────────────────────────────────
 if __name__ == "__main__":
-    example_json = Path("/Volumes/my_own_ssd/2025_areax_lesion/R08_RC6_Comp2_song_detection.json")
+    import argparse
+    parser = argparse.ArgumentParser(description="Inspect song-detection segments from a JSON file.")
+    parser.add_argument("--song-detection", required=True, type=Path)
+    example_json = parser.parse_args().song_detection
     detected_song_segments = build_detected_song_segments(
         example_json,
         songs_only=True,

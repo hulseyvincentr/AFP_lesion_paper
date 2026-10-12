@@ -15,7 +15,7 @@ Typical usage:
   python bc_cluster_qc_and_summaries_v9.py \
     --npz-path /path/to/updated_AreaX_outputs/USA5443/USA5443.npz \
     --metadata-excel-path /path/to/updated_AreaX_outputs/Area_X_lesion_metadata_with_hit_types.xlsx \
-    --spectrogram-script /Users/.../pre_post_syllable_sample_spectrograms_long_rows_with_bouts_v7.py \
+    --spectrogram-script code/helpers/pre_post_syllable_spectrograms.py \
     --phrase-csv /path/to/updated_AreaX_outputs/usage_balanced_phrase_duration_stats.csv \
     --out-dir /path/to/updated_AreaX_outputs/bc_cluster_qc_outputs \
     --animal-id USA5443 \
@@ -35,6 +35,7 @@ import argparse
 import importlib.util
 import math
 import traceback
+import sys
 
 import numpy as np
 import pandas as pd
@@ -44,7 +45,7 @@ import matplotlib.pyplot as plt
 from scipy.stats import wilcoxon
 
 SCRIPT_VERSION = "bc_cluster_qc_and_summaries_v12_full_run_bc_variants"
-DEFAULT_V8_SCRIPT = "export_equal_umap_cluster_spectrograms_v17_full_contiguous_main_decoder_noise_fill.py"
+DEFAULT_V8_SCRIPT = str(Path(__file__).resolve().parents[1] / "helpers" / "bhattacharyya_spectrogram_export.py")
 
 
 def _load_module_from_path(path: Path, module_name: str):
@@ -52,6 +53,7 @@ def _load_module_from_path(path: Path, module_name: str):
     if spec is None or spec.loader is None:
         raise ImportError(f"Could not import module from: {path}")
     mod = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = mod
     spec.loader.exec_module(mod)  # type: ignore[attr-defined]
     return mod
 

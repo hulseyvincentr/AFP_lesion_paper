@@ -1,0 +1,702 @@
+import numpy as np
+import matplotlib.pyplot as plt
+import torch
+import matplotlib.colors as mcolors
+import os
+from collections import Counter
+import umap
+from data_class import SongDataSet_Image, CollateFunction
+from torch.utils.data import DataLoader
+import glasbey
+from sklearn.metrics.cluster import completeness_score
+import seaborn as sns
+import pandas as pd
+from sklearn.metrics import homogeneity_score, completeness_score, v_measure_score, adjusted_rand_score
+import pickle
+from itertools import cycle
+import torch.nn.functional as F
+from sklearn.neighbors import NearestNeighbors
+import warnings
+from numba.core.errors import NumbaDeprecationWarning, NumbaPendingDeprecationWarning
+from scipy.signal import fftconvolve      
+
+warnings.filterwarnings("ignore", category=NumbaDeprecationWarning)
+warnings.filterwarnings("ignore", category=NumbaPendingDeprecationWarning)
+
+def average_colors_per_sample(ground_truth_labels, cmap):
+   """
+   Averages the colors for each prediction point based on the ground truth labels.
+  
+   Parameters:
+   - ground_truth_labels: numpy array of shape (samples, labels_per_sample)
+   - cmap: matplotlib.colors.ListedColormap object
+
+
+   Returns:
+   - averaged_colors: numpy array of shape (samples, 3) containing the averaged RGB colors
+   """
+   # Initialize an array to hold the averaged colors
+   averaged_colors = np.zeros((ground_truth_labels.shape[0], 3))
+
+
+   for i, labels in enumerate(ground_truth_labels):
+       # Retrieve the colors for each label using the colormap
+       colors = cmap(labels / np.max(ground_truth_labels))[:, :3]  # Normalize labels and exclude alpha channel
+
+
+       # Average the colors for the current sample
+       averaged_colors[i] = np.mean(colors, axis=0)
+
+
+   return averaged_colors
+
+
+def load_data( data_dir, context=1000):
+   dataset = SongDataSet_Image(data_dir, num_classes=50, infinite_loader = False, pitch_shift= False, segment_length = None)
+   # collate_fn = CollateFunction(segment_length=context)
+   loader = DataLoader(dataset, batch_size=1, shuffle=True, num_workers=16)
+   return loader
+
+def generate_hdbscan_labels(array, min_samples=1, min_cluster_size=5000):
+   """
+   Generate labels for data points using the HDBSCAN (Hierarchical Density-Based Spatial Clustering of Applications with Noise) clustering algorithm.
+
+   Parameters:
+   - array: ndarray of shape (n_samples, n_features)
+     The input data to cluster.
+   - min_samples: int, default=5
+     The number of samples in a neighborhood for a point to be considered as a core point.
+   - min_cluster_size: int, default=5
+     The minimum number of points required to form a cluster.
+
+   Returns:
+   - labels: ndarray of shape (n_samples)
+     Cluster labels for each point in the dataset. Noisy samples are given the label -1.
+   """
+   import hdbscan
+   # Create an HDBSCAN object with the specified parameters.
+   hdbscan_model = hdbscan.HDBSCAN(min_samples=min_samples, min_cluster_size=min_cluster_size)
+   # Fit the model to the data and extract the labels.
+   labels = hdbscan_model.fit_predict(array)
+   print(f"discovered labels {np.unique(labels)}")
+   return labels
+
+def plot_umap_projection(model, device, data_dirs, category_colors_file="test_llb16", samples=1e6, file_path='category_colors.pkl',
+                    layer_index=None, dict_key=None,
+                    context=1000, save_name=None, raw_spectogram=False, save_dict_for_analysis=True,
+                    remove_non_vocalization=True, min_cluster_size=500, state_finding_algorithm="HDBSCAN", SMOTE_Ratio=3):
+    """
+    parameters:
+    - data_dirs: list of data directories to analyze
+    """
+    predictions_arr = []
+    ground_truth_labels_arr = []
+    spec_arr = []
+    vocalization_arr = []
+    file_indices_arr = []
+    dataset_indices_arr = []  # initialize this array
+    file_map = {}
+    current_file_index = 0
+
+    # reset figure
+    plt.figure(figsize=(8, 6))
+
+    samples = int(samples)
+    total_samples = 0
+
+    # calculate samples per dataset
+    samples_per_dataset = samples // len(data_dirs)
+    print(f"samples per dataset: {samples_per_dataset}")
+
+    # iterate through each dataset
+    for dataset_idx, data_dir in enumerate(data_dirs):
+        data_loader = load_data(data_dir=data_dir, context=context)
+        data_loader_iter = iter(data_loader)
+        dataset_samples = 0
+
+
+        while dataset_samples < samples_per_dataset:
+            try:
+                # retrieve the next batch
+                data, ground_truth_label, vocalization, file_path = next(data_loader_iter)
+
+                # temporary fix for corrupted data
+                if data.shape[1] < 10:
+                    continue
+
+                num_classes = ground_truth_label.shape[-1]
+                original_data_length = data.shape[1]
+                original_label_length = ground_truth_label.shape[1]
+
+
+                # pad data to the nearest context size in the time dimension
+                total_time = data.shape[1]
+                pad_size_time = (context - (total_time % context)) % context
+                data = F.pad(data, (0, 0, 0, pad_size_time), 'constant', 0)
+
+
+                # calculate the number of context windows in the song
+                num_times = data.shape[1] // context
+
+
+                batch, time_bins, freq = data.shape
+
+
+                # reshape data to fit into multiple context-sized batches
+                data = data.reshape(batch * num_times, context, freq)
+
+
+                # pad ground truth labels to match data padding in time dimension
+                total_length_labels = ground_truth_label.shape[1]
+                pad_size_labels_time = (context - (total_length_labels % context)) % context
+                ground_truth_label = F.pad(ground_truth_label, (0, 0, 0, pad_size_labels_time), 'constant', 0)
+                vocalization = F.pad(vocalization, (0, pad_size_labels_time), 'constant', 0)
+
+
+                ground_truth_label = ground_truth_label.reshape(batch * num_times, context, num_classes)
+                vocalization = vocalization.reshape(batch * num_times, context)
+
+
+                # store file information
+                if file_path not in file_map:
+                    file_map[current_file_index] = file_path
+                else:
+                    continue
+
+
+                if not raw_spectogram:
+                    data = data.unsqueeze(1)
+                    data = data.permute(0, 1, 3, 2)
+
+
+                    _, layers = model.inference_forward(data.to(device))
+
+
+                    layer_output_dict = layers[layer_index]
+                    output = layer_output_dict.get(dict_key, None)
+
+
+                    if output is None:
+                        print(f"invalid key: {dict_key}. skipping this batch.")
+                        continue
+
+
+                    batches, time_bins, features = output.shape
+                    predictions = output.reshape(batches, time_bins, features)
+                    predictions = predictions.flatten(0, 1)
+                    predictions = predictions[:original_data_length]
+
+
+                    predictions_arr.append(predictions.detach().cpu().numpy())
+
+
+                else:
+                    data = data.unsqueeze(1)
+                    data = data.permute(0, 1, 3, 2)
+
+
+                data = data.squeeze(1)
+                spec = data
+                spec = spec.permute(0, 2, 1)
+
+
+                spec = spec.flatten(0, 1)
+                spec = spec[:original_data_length]
+
+
+                ground_truth_label = ground_truth_label.flatten(0, 1)
+                vocalization = vocalization.flatten(0, 1)
+
+
+                ground_truth_label = ground_truth_label[:original_label_length]
+                vocalization = vocalization[:original_data_length]
+
+
+                ground_truth_label = torch.argmax(ground_truth_label, dim=-1)
+
+
+                # create file_indices first
+                file_indices = np.array(ground_truth_label.cpu().numpy())
+                file_indices[:] = current_file_index
+
+
+                # now create dataset_indices using the shape of file_indices
+                dataset_indices = np.full_like(file_indices, dataset_idx)
+
+
+                spec_arr.append(spec.cpu().numpy())
+                ground_truth_labels_arr.append(ground_truth_label.cpu().numpy())
+                vocalization_arr.append(vocalization.cpu().numpy())
+                file_indices_arr.append(file_indices)
+                dataset_indices_arr.append(dataset_indices)
+
+
+                total_samples += spec.shape[0]
+                current_file_index += 1
+
+
+                if np.sum(np.concatenate(vocalization_arr, axis=0)) > samples:
+                    break
+
+
+                dataset_samples += spec.shape[0]
+
+
+            except StopIteration:
+                print(f"dataset {data_dir} exhausted after {dataset_samples} samples")
+                break
+
+    # convert the list of batch * samples * features to samples * features
+    ground_truth_labels = np.concatenate(ground_truth_labels_arr, axis=0)
+    spec_arr = np.concatenate(spec_arr, axis=0)
+    file_indices = np.concatenate(file_indices_arr, axis=0)
+    dataset_indices = np.concatenate(dataset_indices_arr, axis=0)
+    vocalization_arr = np.concatenate(vocalization_arr, axis=0)
+    original_spec_arr = spec_arr
+
+    if not raw_spectogram:
+        predictions = np.concatenate(predictions_arr, axis=0)
+    else:
+        predictions = spec_arr
+
+    # filter for vocalization before any processing or visualization
+    if remove_non_vocalization:
+        print(f"vocalization arr shape {vocalization_arr.shape}")
+        print(f"predictions arr shape {predictions.shape}")
+        print(f"ground truth labels arr shape {ground_truth_labels.shape}")
+        print(f"spec arr shape {spec_arr.shape}")
+
+        # Check for NaN or Inf values
+        if np.isnan(predictions).any() or np.isinf(predictions).any():
+            print("Warning: NaN or Inf values found in predictions. Removing problematic samples...")
+            # Remove samples with NaN or Inf values
+            valid_indices = ~(np.isnan(predictions).any(axis=1) | np.isinf(predictions).any(axis=1))
+            predictions = predictions[valid_indices]
+            ground_truth_labels = ground_truth_labels[valid_indices]
+            spec_arr = spec_arr[valid_indices]
+            file_indices = file_indices[valid_indices]
+            dataset_indices = dataset_indices[valid_indices]
+            vocalization_arr = vocalization_arr[valid_indices]
+
+        vocalization_indices = np.where(vocalization_arr == 1)[0]
+        
+        # Make sure vocalization_indices is not empty
+        if len(vocalization_indices) == 0:
+            print("Error: No vocalization indices found. Cannot proceed with UMAP.")
+            return
+            
+        predictions = predictions[vocalization_indices]
+        ground_truth_labels = ground_truth_labels[vocalization_indices]
+        spec_arr = spec_arr[vocalization_indices]
+        file_indices = file_indices[vocalization_indices]
+        dataset_indices = dataset_indices[vocalization_indices]
+    
+    # fit the umap reducer with more conservative parameters
+    print("initializing umap reducer...")
+    # Try with more conservative parameters
+    reducer = umap.UMAP(
+        n_neighbors=50,  
+        min_dist=0.0,  
+        n_components=2,
+        metric='cosine', 
+        low_memory=True,
+        n_jobs=-1
+    )
+    print("umap reducer (2 dims for visualization) initialized.")
+
+    reducer_cluster = umap.UMAP(
+        n_neighbors=50,  
+        min_dist=0.0,  
+        n_components=8,
+        metric='cosine', 
+        low_memory=True,
+        n_jobs=-1
+    )
+    print("umap reducer (8 dims for clustering) initialized.")
+
+   
+    if np.isnan(predictions).any():
+        print("Warning: NaN values found. Replacing with zeros.")
+        predictions = np.nan_to_num(predictions)
+
+    embedding_outputs = reducer.fit_transform(predictions)
+    print("umap fitting for visualization complete. shape of embedding outputs:", embedding_outputs.shape)
+
+    embedding_outputs_cluster = reducer_cluster.fit_transform(predictions)
+    print("umap cluster fitting for clustering complete. shape of embedding outputs:", embedding_outputs_cluster.shape)
+
+    hdbscan_labels = generate_hdbscan_labels(embedding_outputs_cluster, min_samples=1, min_cluster_size=5000)
+    print("hdbscan labels generated. unique labels found:", np.unique(hdbscan_labels))
+   
+    # get unique labels and create color palettes
+    unique_clusters = np.unique(hdbscan_labels)
+    unique_ground_truth_labels = np.unique(ground_truth_labels)
+
+    def create_color_palette(n_colors):
+        """create a color palette with the specified number of colors"""
+        colors = glasbey.create_palette(palette_size=n_colors)
+        
+        def hex_to_rgb(hex_str):
+            # remove '#' if present
+            hex_str = hex_str.lstrip('#')
+            # convert hex to rgb
+            return tuple(int(hex_str[i:i+2], 16)/255.0 for i in (0, 2, 4))
+        
+        # convert hex colors to rgb tuples
+        rgb_colors = [hex_to_rgb(color) for color in colors]
+        return rgb_colors
+
+
+    # create color palettes
+    n_ground_truth_labels = len(unique_ground_truth_labels)
+    n_hdbscan_clusters = len(unique_clusters)
+    ground_truth_colors = create_color_palette(n_ground_truth_labels)
+    hdbscan_colors = create_color_palette(n_hdbscan_clusters)
+
+    # make the first color in the hdbscan palette black
+    hdbscan_colors[0] = (0, 0, 0)
+
+    # create experiment-specific directory for images
+    experiment_dir = os.path.join("imgs", "umap_plots", save_name)
+    if not os.path.exists(experiment_dir):
+        os.makedirs(experiment_dir)
+
+    # plot hdbscan labels
+    fig1, ax1 = plt.subplots(figsize=(16, 16), facecolor='white')
+    ax1.set_facecolor('white')
+    ax1.scatter(embedding_outputs[:, 0], embedding_outputs[:, 1],
+                c=hdbscan_labels, s=10, alpha=0.1,
+                cmap=mcolors.ListedColormap(hdbscan_colors))
+    ax1.set_title("hdbscan discovered labels", fontsize=48)
+    ax1.set_xlabel("umap dimension 1", fontsize=48)
+    ax1.set_ylabel("umap dimension 2", fontsize=48)
+    ax1.tick_params(axis='both', which='both', bottom=False, left=False,
+                    labelbottom=False, labelleft=False)
+    plt.tight_layout()
+    plt.savefig(os.path.join(experiment_dir, "hdbscan_labels.png"),
+                facecolor=fig1.get_facecolor(), edgecolor='none')
+    plt.close(fig1)
+
+    # plot ground truth labels
+    fig2, ax2 = plt.subplots(figsize=(16, 16), facecolor='white')
+    ax2.set_facecolor('white')
+    ax2.scatter(embedding_outputs[:, 0], embedding_outputs[:, 1],
+                c=ground_truth_labels, s=10, alpha=0.1,
+                cmap=mcolors.ListedColormap(ground_truth_colors))
+    ax2.set_title("ground truth labels", fontsize=48)
+    ax2.set_xlabel("umap dimension 1", fontsize=48)
+    ax2.set_ylabel("umap dimension 2", fontsize=48)
+    ax2.tick_params(axis='both', which='both', bottom=False, left=False,
+                    labelbottom=False, labelleft=False)
+    plt.tight_layout()
+    plt.savefig(os.path.join(experiment_dir, "ground_truth_labels.png"),
+                facecolor=fig2.get_facecolor(), edgecolor='none')
+    plt.close(fig2)
+    
+    # save the data
+    os.makedirs("files", exist_ok=True)
+
+    np.savez(
+        f"files/{save_name}",
+        embedding_outputs=embedding_outputs,
+        hdbscan_labels=hdbscan_labels,
+        ground_truth_labels=ground_truth_labels,
+        predictions=predictions,
+        s=spec_arr,
+        hdbscan_colors=hdbscan_colors,
+        ground_truth_colors=ground_truth_colors,
+        original_spectogram=original_spec_arr,
+        vocalization=vocalization_arr,
+        file_indices=file_indices,
+        dataset_indices=dataset_indices,
+        file_map=file_map
+    )
+
+import numpy as np
+from collections import Counter
+from sklearn.metrics import homogeneity_score, completeness_score, v_measure_score
+
+
+class ComputerClusterPerformance():
+   """
+   This class computes clustering performance metrics such as
+   homogeneity, completeness, and V-measure using ground-truth
+   labels and HDBSCAN cluster assignments.
+
+
+   Key Modifications:
+   - Noise points (where hdbscan_labels == -1) are no longer removed.
+     Instead, each noise point is replaced by the nearest non-noise
+     cluster label, if one can be found by looking to the left or right.
+     If no non-noise label can be found, it remains -1.
+   - Silence frames were originally represented as 0. Now, silence
+     is represented as -1 to align with the concept of no assignment.
+     The `syllable_to_phrase_labels` method is called with silence=-1,
+     ensuring phrase segmentation works with the updated silence value.
+   """
+
+
+   def __init__(self, labels_path=None):
+       """
+       Parameters:
+       - labels_path: list of str
+         List of paths to .npz files containing
+         'hdbscan_labels' and 'ground_truth_labels' arrays.
+       """
+       self.labels_paths = labels_path
+          
+      
+   @staticmethod
+   def syllable_to_phrase_labels(arr, silence=-1):
+       """
+       Convert a sequence of syllable labels into a sequence of phrase labels,
+       merging silence bins with their nearest adjacent syllables.
+
+
+       For each contiguous block of silence:
+       - If it's bounded by the same label on both sides, assign that label to all.
+       - If it's bounded by two different labels, assign each time-bin to the closer label;
+       ties go to the left.
+       - If it's at the beginning or end (missing one side), assign to the available side.
+
+
+       Parameters
+       ----------
+       arr : np.ndarray
+           Array of integer labels, where `silence` frames are indicated by `silence`.
+       silence : int, optional
+           Integer value representing silence, by default -1.
+
+
+       Returns
+       -------
+       np.ndarray
+           Array of phrase-level labels with silence frames appropriately merged.
+       """
+       new_arr = np.array(arr, dtype=int)
+       length = len(new_arr)
+       if length == 0:
+           return new_arr  # Edge case: empty input
+
+
+       # Helper function to find contiguous regions of silence
+       def find_silence_runs(labels):
+           runs = []
+           in_silence = False
+           start = None
+
+
+           for i, val in enumerate(labels):
+               if val == silence and not in_silence:
+                   in_silence = True
+                   start = i
+               elif val != silence and in_silence:
+                   runs.append((start, i - 1))
+                   in_silence = False
+           # If ended in silence
+           if in_silence:
+               runs.append((start, length - 1))
+           return runs
+
+
+       # Identify contiguous silence regions
+       silence_runs = find_silence_runs(new_arr)
+
+
+       for start_idx, end_idx in silence_runs:
+           # Check left and right labels
+           left_label = new_arr[start_idx - 1] if start_idx > 0 else None
+           right_label = new_arr[end_idx + 1] if end_idx < length - 1 else None
+
+
+           if left_label is None and right_label is None:
+               # Entire array is silence or single region with no bounding labels
+               # Do nothing or choose some default strategy
+               continue
+           elif left_label is None:
+               # Leading silence; merge with right label
+               new_arr[start_idx:end_idx+1] = right_label
+           elif right_label is None:
+               # Trailing silence; merge with left label
+               new_arr[start_idx:end_idx+1] = left_label
+           elif left_label == right_label:
+               # Same label on both sides
+               new_arr[start_idx:end_idx+1] = left_label
+           else:
+               # Different labels on both sides
+               # Assign each bin to whichever side is closer; ties go left
+               left_distances = np.arange(start_idx, end_idx + 1) - (start_idx - 1)
+               right_distances = (end_idx + 1) - np.arange(start_idx, end_idx + 1)
+
+
+               for i in range(start_idx, end_idx + 1):
+                   # Distance from left non-silence is (i - (start_idx - 1))
+                   dist_left = i - (start_idx - 1)
+                   # Distance from right non-silence is ((end_idx + 1) - i)
+                   dist_right = (end_idx + 1) - i
+
+
+                   if dist_left < dist_right:
+                       new_arr[i] = left_label
+                   elif dist_right < dist_left:
+                       new_arr[i] = right_label
+                   else:
+                       # Tie -> go left
+                       new_arr[i] = left_label
+
+
+       return new_arr
+
+
+   @staticmethod
+   def majority_vote(data, window_size=1):
+       """
+       Return an array of the same length as 'data',
+       where each index i is replaced by the majority over
+       a window around i. No padding is added.
+       """
+       from collections import Counter
+       data = np.asarray(data)
+       n = len(data)
+      
+       # If window_size=1, no smoothing
+       if window_size <= 1 or n == 0:
+           return data.copy()
+      
+       half_w = window_size // 2
+       output = np.zeros_like(data)
+      
+       for i in range(n):
+           # define start/end, clamped
+           start = max(0, i - half_w)
+           end   = min(n, i + half_w + 1)
+           window = data[start:end]
+          
+           # majority
+           c = Counter(window)
+           major_label = max(c, key=c.get)  # picks the label with highest freq
+           output[i] = major_label
+      
+       return output
+
+   def fill_noise_with_nearest_label(self, labels):
+       """
+       For each noise point (labeled -1), find the nearest non-noise
+       label to the left or right and assign it to this point. If no
+       non-noise label is found, it remains -1.
+      
+       Parameters:
+       - labels: np.ndarray
+         Array of cluster labels where -1 indicates noise.
+
+
+       Returns:
+       - labels: np.ndarray
+         Array with noise points replaced by the nearest non-noise labels,
+         when possible.
+       """
+       noise_indices = np.where(labels == -1)[0]
+       for idx in noise_indices:
+           # Search left
+           left_idx = idx - 1
+           while left_idx >= 0 and labels[left_idx] == -1:
+               left_idx -= 1
+          
+           # Search right
+           right_idx = idx + 1
+           while right_idx < len(labels) and labels[right_idx] == -1:
+               right_idx += 1
+          
+           # Compute distances if valid
+           left_dist = (idx - left_idx) if left_idx >= 0 else np.inf
+           right_dist = (right_idx - idx) if right_idx < len(labels) else np.inf
+
+           # Assign based on nearest non-noise label
+           if left_dist == np.inf and right_dist == np.inf:
+               # No non-noise neighbors found, remain -1
+               continue
+           elif left_dist <= right_dist:
+               labels[idx] = labels[left_idx]
+           else:
+               labels[idx] = labels[right_idx]
+
+       return labels
+
+
+   def compute_vmeasure_score(self):
+       """
+       Compute the homogeneity, completeness, and V-measure metrics for all
+       label files provided at initialization.
+
+
+       Steps:
+       1. Load HDBSCAN labels and ground-truth labels from npz files.
+       2. Instead of removing noise points (HDBSCAN label = -1), replace them
+          with the nearest non-noise label if possible, or leave as -1 if not.
+       3. Convert silence from 0 to -1 in ground_truth_labels for consistency.
+       4. Convert ground_truth_labels to phrase labels using `syllable_to_phrase_labels` with silence=-1.
+       5. Compute homogeneity, completeness, and v-measure using these cleaned labels.
+       6. Return a dictionary of metrics, each containing a tuple of (mean, standard_error_of_mean).
+
+
+       Returns:
+       - metrics: dict
+         {
+           'Homogeneity': (mean_h, sem_h),
+           'Completeness': (mean_c, sem_c),
+           'V-measure': (mean_v, sem_v)
+         }
+       """
+       homogeneity_scores = []
+       completeness_scores = []
+       v_measure_scores = []
+
+
+       for path_index, path in enumerate(self.labels_paths):
+           f = np.load(path)
+           hdbscan_labels = f['hdbscan_labels']
+           ground_truth_labels = f['ground_truth_labels']
+
+
+           # Step 1: Identify noise points and handle them
+           # We do NOT remove noise points now. Instead, we fill them in.
+           hdbscan_labels = self.fill_noise_with_nearest_label(hdbscan_labels)
+
+
+           # # Step 2: Convert silence from 0 to -1 in ground_truth_labels
+           # ground_truth_labels[ground_truth_labels == 0] = -1
+
+
+           # # Step 3: Apply majority voting to smooth HDBSCAN labels (optional)
+           # hdbscan_labels = self.majority_vote(hdbscan_labels)
+          
+           # Step 4: Convert ground_truth_labels to phrase-level labels with silence = -1
+           ground_truth_labels = self.syllable_to_phrase_labels(arr=ground_truth_labels, silence=0)
+
+
+           # Compute metrics
+           homogeneity = homogeneity_score(ground_truth_labels, hdbscan_labels)
+           completeness = completeness_score(ground_truth_labels, hdbscan_labels)
+           v_measure = v_measure_score(ground_truth_labels, hdbscan_labels)
+
+
+           homogeneity_scores.append(homogeneity)
+           completeness_scores.append(completeness)
+           v_measure_scores.append(v_measure)
+
+
+       # Calculate mean and standard error (SEM = std / sqrt(n))
+       n = len(homogeneity_scores)
+       metrics = {
+           'Homogeneity': (np.mean(homogeneity_scores), np.std(homogeneity_scores, ddof=1) / np.sqrt(n)),
+           'Completeness': (np.mean(completeness_scores), np.std(completeness_scores, ddof=1) / np.sqrt(n)),
+           'V-measure': (np.mean(v_measure_scores), np.std(v_measure_scores, ddof=1) / np.sqrt(n))
+       }
+
+
+       return metrics
+
+
+
+
+

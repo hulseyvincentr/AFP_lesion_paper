@@ -15,6 +15,12 @@ Analysis and figure-generation code supporting the manuscript on anterior forebr
 
 ### Phrase-duration variability
 
+- `code/analysis/generate_figure3_inputs_from_json.py`
+  - Generates balanced ±14-day pair metrics and all-day occurrence data from decoded JSONs.
+
+- `code/figure_generation/figure3_timecourse.py`
+  - Supplied updated Figure 3E/individual time-course implementation with 10 daily phrases and at least 3 birds per group summary.
+
 - `code/analysis/phrase_duration_quantile_profile.py`
   - Calculates within-bird phrase-duration variability changes across syllables and quantile-based selections.
 
@@ -46,7 +52,20 @@ Analysis and figure-generation code supporting the manuscript on anterior forebr
 - `code/figure_generation/suppfig2_annotation_qc.py`
   - Supplemental UMAP and phrase-duration QC plots used to evaluate post-lesion annotation stability.
 
-The current candidate implementation for Figure 3E is retained separately while the final version of that panel is being selected.
+The separate Figure 3E candidate is retained for provenance checking. See `docs/submission_readiness.md` for unresolved source/run-setting checks.
+
+## eNeuro review package
+
+The final statistics-table generator is `code/analysis/make_eneuro_statistics_table_combined.py`.
+
+```bash
+python scripts/reproduce_statistics_table.py
+python scripts/build_eneuro_code_zip.py
+```
+
+The first command checks all 14 rows against the manuscript results using the included bird-level CSVs. The second creates a neutral review ZIP without Git history, author/preprint README information, caches, or raw audio. Read `docs/submission_readiness.md` before finalizing the complete manuscript code package; upstream annotation and analysis provenance still need confirmation.
+
+`requirements-review-tested.txt` records the verification environment, not the original Mac research environment.
 
 ## Environment
 

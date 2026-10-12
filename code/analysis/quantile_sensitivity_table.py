@@ -20,12 +20,8 @@ Permutation statistic: difference in MEAN bird-level quantile ΔCV.
 Small sample sizes are handled by exact enumeration of bird-label assignments
 when feasible.
 
-Default input:
-  ~/Desktop/New_cutoff_outputs/Figure3_top15_inputs_v2/
-      figure3_balanced_pair_metrics.csv
-
-Default output:
-  ~/Desktop/New_cutoff_outputs/Q60_Q75_Q90_sensitivity/
+Input must be supplied with --input (figure3_balanced_pair_metrics.csv).
+Default output: outputs/Q60_Q75_Q90_sensitivity/
 
 The script also writes a manuscript-ready Word document:
   05_Supplemental_Table_Q60_Q75_Q90_sensitivity.docx
@@ -54,14 +50,8 @@ except ImportError as exc:
         "Install it in the syntax_analysis environment with: conda install -c conda-forge python-docx"
     ) from exc
 
-HOME = Path.home()
-DEFAULT_INPUT = (
-    HOME / "Desktop" / "New_cutoff_outputs" / "Figure3_top15_inputs_v2"
-    / "figure3_balanced_pair_metrics.csv"
-)
-DEFAULT_OUTPUT = (
-    HOME / "Desktop" / "New_cutoff_outputs" / "Q60_Q75_Q90_sensitivity"
-)
+DEFAULT_OUTPUT = Path("outputs") / "Q60_Q75_Q90_sensitivity"
+
 
 QUANTILES = (0.60, 0.75, 0.90)
 SHAM = "sham_saline"
@@ -81,7 +71,7 @@ def parse_args() -> argparse.Namespace:
         description="Q60/Q75/Q90 sensitivity analysis for bird-level phrase-duration ΔCV.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
-    p.add_argument("--input", type=Path, default=DEFAULT_INPUT)
+    p.add_argument("--input", type=Path, required=True)
     p.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
     p.add_argument(
         "--quantile-method", default="linear",

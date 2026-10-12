@@ -1,0 +1,18 @@
+# Additional dependencies identified from the supplied annotation source.
+# Versions are not a reconstruction of the original training environment.
+numpy
+pandas
+scipy
+matplotlib
+seaborn
+torch
+torchvision
+librosa
+soundfile
+tqdm
+scikit-learn
+umap-learn
+hdbscan
+glasbey
+numba
+psutil

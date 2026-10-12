@@ -21,8 +21,8 @@ This script:
 
   3. Builds a summary table with partial M+L, complete M+L, and pooled M+L rows.
 
-Default paths are set for Miranda Hulsey-Vincent's AFP_lesion_paper repo and SSD.
-All paths can be overridden from the command line.
+The default repository path is derived from this script's location.
+Input data paths must be supplied through the command line.
 """
 
 from __future__ import annotations

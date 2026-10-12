@@ -1,0 +1,20 @@
+{
+  "description": "SHA-256 of candidate source files supplied by the author; adapted copies described below.",
+  "source_sha256": {
+    "bc_cluster_qc_and_summaries_v19_full_contiguous_majority_vote_smoothing.py": "e777a402c9abd197e48c04fd7a0ef3faeccbefba96542f1aea3c457f85c723bf",
+    "generate_figure3_inputs_from_json_all_days.py": "7e43774c6f750b6e9b4ef10a61f285a16f6c5e1c50fa5708a45577f366737c66",
+    "generate_figure3_top15_inputs_from_json.py": "484e1e15619ce33a0fa96b278ed6278aae5501fc104cf10c7442730f67830fa2",
+    "generate_figure3_top15_inputs_from_json_v2.py": "9a426ef1d3b78189507f7cab5924e29f5d9c9fb0e3b35829ffd7e7c7f19e956f",
+    "make_fig3E_and_timecourse_supp_from_raw.py": "737c0ef8adf36ad309998b25752939829a763a790575db71300b3d629acd9f55",
+    "make_fig3E_and_timecourse_supp_from_raw_UPDATED_v2.py": "3e7dd4890a558b29130e64d02527d8aec5acb1b8dd2daeddf8082990253234ad",
+    "plot_quantile_threshold_scatter_deltaCV_timecourse_v25.py": "f3a362ad779191bcd33f22d36d1a9db45496735a170a3f0a45e97c1aa3053a0e",
+    "plot_quantile_threshold_scatter_deltaCV_timecourse_v26.py": "2df0f065fb777066fbe87606077f746bdf9757fd4cc6747cc5d327b5ce7f6165",
+    "plot_quantile_threshold_scatter_deltaCV_timecourse_v27.py": "847a5ce158c536a32abb87b7a1f0c998d6276bd2874ed9f680034270f1ce4833",
+    "run_figure4_bc_from_raw.py": "8d8efaf421d2a5bf0352530fd8533c4dc53935fcce705f58b621305c6a2767b0"
+  },
+  "adapted_files": {
+    "code/analysis/generate_figure3_inputs_from_json.py": "generate_figure3_inputs_from_json_all_days.py; byte-identical source, filename changed",
+    "code/figure_generation/figure3_timecourse.py": "make_fig3E_and_timecourse_supp_from_raw_UPDATED_v2.py; CLI paths made explicit; calculations preserved"
+  },
+  "excluded_legacy_runner": "run_figure4_bc_from_raw.py: 20 runs/2 s/top-30% differs from current manuscript 15 runs/10 s/Q75"
+}

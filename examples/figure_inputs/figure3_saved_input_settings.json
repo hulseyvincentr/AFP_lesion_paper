@@ -1,0 +1,15 @@
+{
+  "json_dir": "external/AFP_lesion_jsons",
+  "output": "outputs/figure3_inputs",
+  "pre_start_day": -14,
+  "pre_end_day": -1,
+  "post_start_day": 1,
+  "post_end_day": 14,
+  "long_start_day": -30,
+  "long_end_day": 30,
+  "min_period_phrases": 10,
+  "min_period_days": 2,
+  "balance_draws": 200,
+  "seed": 123,
+  "include_ineligible_period_rows": false
+}

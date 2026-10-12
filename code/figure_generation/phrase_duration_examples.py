@@ -2085,7 +2085,7 @@ def _build_arg_parser():
     p.add_argument("--labels", type=str, nargs="*", default=None, help="Restrict to these labels.")
     p.add_argument("--y_max_ms", type=float, default=None)
     p.add_argument("--figure-width-cm", dest="figure_width_cm", type=float, default=17.4,
-                   help="Width of each combined 1x3 bird strip in cm. 17.4 matches the artboard width; place at 50% for 8.7 cm.")
+                   help="Width of each combined 1x3 bird strip in cm. 17.4 matches the artboard width; place at 50%% for 8.7 cm.")
     p.add_argument("--figure-height-cm", dest="figure_height_cm", type=float, default=4.8,
                    help="Height of each combined 1x3 bird strip in cm.")
     p.add_argument("--save-pad-inches", dest="save_pad_inches", type=float, default=0.03,

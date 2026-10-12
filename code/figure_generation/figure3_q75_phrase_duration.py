@@ -94,7 +94,7 @@ def parse_args():
         default=0.05,
         help=(
             "Fraction of the displayed scatter data range added as padding "
-            "to each side of both axes. Default: 0.05 (5%)."
+            "to each side of both axes. Default: 0.05 (5%%)."
         ),
     )
     p.add_argument(

@@ -1,0 +1,5 @@
+{
+  "num_classes": 28,
+  "model_dir": "experiments/TweetyBERT_Pretrain_LLB_AreaX_FallSong",
+  "data_file": "files/USA5288.npz"
+}

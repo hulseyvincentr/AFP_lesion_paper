@@ -245,7 +245,10 @@ def build_detected_and_merged_songs(
 # Quick local test
 # ──────────────────────────────────────────────────────────────
 if __name__ == "__main__":
-    example_json = Path("/Volumes/my_own_ssd/2025_areax_lesion/R08_RC6_Comp2_song_detection.json")
+    import argparse
+    parser = argparse.ArgumentParser(description="Inspect song-detection segments from a JSON file.")
+    parser.add_argument("--song-detection", required=True, type=Path)
+    example_json = parser.parse_args().song_detection
     out = build_detected_and_merged_songs(
         example_json,
         songs_only=True,

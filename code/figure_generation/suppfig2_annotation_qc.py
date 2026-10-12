@@ -45,8 +45,8 @@ Data inputs:
 
 The phrase-duration extraction uses the existing
 merge_annotations_from_split_songs.build_decoded_with_split_labels helper,
-so run this script from the syntax_analysis environment/repository where that
-module is available.
+which is included under code/helpers/ in this repository.
+Install the dependencies listed in requirements.txt before running this script.
 """
 
 from __future__ import annotations
